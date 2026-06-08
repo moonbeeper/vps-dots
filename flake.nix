@@ -11,6 +11,9 @@
 
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    agenix.url = "github:ryantm/agenix";
+    agenix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -20,6 +23,7 @@
       disko,
       deploy-rs,
       home-manager,
+      agenix,
       ...
     }@inputs:
     let
@@ -28,7 +32,7 @@
       # NixOS configuration entrypoint
       # Available through 'nixos-rebuild --flake .#your-hostname'
       nixosConfigurations = {
-        starling = nixpkgs.lib.nixosSystem {
+        stargaze = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           specialArgs = { inherit inputs; };
           modules = [
@@ -36,17 +40,18 @@
             disko.nixosModules.disko
             { hardware.facter.reportPath = ./facter.json; }
             home-manager.nixosModules.home-manager
+            agenix.nixosModules.default
           ];
         };
       };
 
       deploy.nodes = {
-        starling = {
+        stargaze = {
           hostname = "100.74.152.90";
           profiles.system = {
             sshUser = "moon";
             user = "root";
-            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.starling;
+            path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.stargaze;
             interactiveSudo = true; # My user has a password :3
           };
         };

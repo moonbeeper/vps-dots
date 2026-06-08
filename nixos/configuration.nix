@@ -20,6 +20,9 @@
     # Import your generated (nixos-generate-config) hardware configuration
     # ./hardware-configuration.nix
     ./disk.nix
+    ../services/caddy.nix
+    ../services/postgres.nix
+    ./secret_paths.nix
   ];
 
   nixpkgs = {
@@ -45,7 +48,7 @@
 
   # FIXME: Add the rest of your current configuration
 
-  networking.hostName = "starling";
+  networking.hostName = "stargaze";
   time.timeZone = "Europe/Madrid";
 
   # TODO: Configure your system-wide user settings (groups, etc), add more users as needed.
@@ -80,11 +83,6 @@
   programs.fish.enable = true;
   programs.starship.enable = true;
   services.tailscale.enable = true;
-
-  services.postgresql = {
-    enable = true;
-    package = pkgs.postgresql_18;
-  };
 
   # This setups a SSH server. Very important if you're setting up a headless system.
   # Feel free to remove if you don't need it.
