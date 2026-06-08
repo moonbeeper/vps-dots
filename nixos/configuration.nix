@@ -41,6 +41,7 @@
   };
 
   boot.loader.grub.enable = true;
+  zramSwap.enable = true;
 
   # FIXME: Add the rest of your current configuration
 
@@ -56,12 +57,19 @@
       # Be sure to change it (using passwd) after rebooting!
       initialPassword = "mrawr";
       isNormalUser = true;
+      shell = pkgs.fish;
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEIw+Y54mCylt14Braappuzgich5F01P4te+uMI8aeRI hetzner"
       ];
       # TODO: Be sure to add any other groups you need (such as networkmanager, audio, docker, etc)
       extraGroups = [ "wheel" ];
     };
+  };
+
+  home-manager = {
+    users.moon = import ./home.nix;
+    useGlobalPkgs = true;
+    useUserPackages = true;
   };
 
   programs.neovim = {
@@ -72,6 +80,11 @@
   programs.fish.enable = true;
   programs.starship.enable = true;
   services.tailscale.enable = true;
+
+  services.postgresql = {
+    enable = true;
+    package = pkgs.postgresql_18;
+  };
 
   # This setups a SSH server. Very important if you're setting up a headless system.
   # Feel free to remove if you don't need it.

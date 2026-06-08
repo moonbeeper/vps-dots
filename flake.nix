@@ -8,6 +8,9 @@
     disko.inputs.nixpkgs.follows = "nixpkgs";
 
     deploy-rs.url = "github:serokell/deploy-rs";
+
+    home-manager.url = "github:nix-community/home-manager/release-26.05";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -16,6 +19,7 @@
       nixpkgs,
       disko,
       deploy-rs,
+      home-manager,
       ...
     }@inputs:
     let
@@ -31,6 +35,7 @@
             ./nixos/configuration.nix
             disko.nixosModules.disko
             { hardware.facter.reportPath = ./facter.json; }
+            home-manager.nixosModules.home-manager
           ];
         };
       };
@@ -42,6 +47,7 @@
             sshUser = "moon";
             user = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.starling;
+            interactiveSudo = true; # My user has a password :3
           };
         };
       };
