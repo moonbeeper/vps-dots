@@ -68,6 +68,7 @@
       extraGroups = [ "wheel" ];
     };
   };
+  security.sudo.wheelNeedsPassword = false; # right, i am using a ssh keys. thanks warning of interactive sudo in deployrs
 
   home-manager = {
     users.moon = import ./home.nix;

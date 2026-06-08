@@ -52,7 +52,6 @@
             sshUser = "moon";
             user = "root";
             path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.stargaze;
-            interactiveSudo = true; # My user has a password :3
           };
         };
       };
