@@ -1,5 +1,5 @@
 {
-  description = "Your new nix config";
+  description = "moon's pretty vps config that might be very bad for your health";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";

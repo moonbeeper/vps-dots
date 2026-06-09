@@ -23,6 +23,7 @@
     ../services/caddy.nix
     ../services/postgres.nix
     ./secret_paths.nix
+    ../services/hi_world.nix
   ];
 
   nixpkgs = {
@@ -98,6 +99,9 @@
     };
   };
 
+  moonix.services.hi_world = {
+    enable = true;
+  };
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system.stateVersion = "26.05";
 }
