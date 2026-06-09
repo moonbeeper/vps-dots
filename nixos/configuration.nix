@@ -20,10 +20,8 @@
     # Import your generated (nixos-generate-config) hardware configuration
     # ./hardware-configuration.nix
     ./disk.nix
-    ../services/caddy.nix
-    ../services/postgres.nix
     ./secret_paths.nix
-    ../services/hi_world.nix
+    ./services.nix
   ];
 
   nixpkgs = {
@@ -86,6 +84,15 @@
   programs.starship.enable = true;
   services.tailscale.enable = true;
 
+  environment.systemPackages = with pkgs; [
+    wget
+    curl
+    git
+    htop
+    btop
+    unzip
+  ];
+
   # This setups a SSH server. Very important if you're setting up a headless system.
   # Feel free to remove if you don't need it.
   services.openssh = {
@@ -99,9 +106,6 @@
     };
   };
 
-  moonix.services.hi_world = {
-    enable = true;
-  };
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system.stateVersion = "26.05";
 }

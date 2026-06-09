@@ -5,13 +5,8 @@
 
   home.packages = with pkgs; [
     eza
-    wget
-    curl
-    unzip
     croc
     fastfetch
-    htop
-    btop
   ];
   programs.home-manager.enable = true;
 

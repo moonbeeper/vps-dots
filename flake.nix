@@ -14,6 +14,9 @@
 
     agenix.url = "github:ryantm/agenix";
     agenix.inputs.nixpkgs.follows = "nixpkgs";
+
+    nixos-anywhere.url = "github:nix-community/nixos-anywhere/";
+    nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =
@@ -24,6 +27,7 @@
       deploy-rs,
       home-manager,
       agenix,
+      nixos-anywhere,
       ...
     }@inputs:
     let
@@ -58,5 +62,14 @@
 
       # This is highly advised, and will prevent many possible mistakes
       checks = builtins.mapAttrs (system: deployLib: deployLib.deployChecks self.deploy) deploy-rs.lib;
+
+      devShells.x86_64-linux.default = nixpkgs.legacyPackages.x86_64-linux.mkShell {
+        packages = [
+          deploy-rs.packages.x86_64-linux.default
+          agenix.packages.x86_64-linux.default
+          nixos-anywhere.packages.x86_64-linux.default
+        ];
+      };
+      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixfmt-tree;
     };
 }
