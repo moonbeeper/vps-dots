@@ -10,12 +10,15 @@
   ];
   programs.home-manager.enable = true;
 
-  programs.fish.shellAliases = {
-    ls = "eza";
-    ll = "eza -l";
-    la = "eza -la";
-    vi = "nvim";
-    vim = "nvim";
+  programs.fish = {
+    enable = true;
+    shellAliases = {
+      ls = "eza";
+      ll = "eza -l";
+      la = "eza -la";
+      vi = "nvim";
+      vim = "nvim";
+    };
   };
 
   home.stateVersion = "26.05";

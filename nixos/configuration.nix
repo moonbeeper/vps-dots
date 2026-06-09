@@ -10,15 +10,6 @@
 {
   # You can import other NixOS modules here
   imports = [
-    # If you want to use modules from other flakes (such as nixos-hardware):
-    # inputs.hardware.nixosModules.common-cpu-amd
-    # inputs.hardware.nixosModules.common-ssd
-
-    # You can also split up your configuration and import pieces of it here:
-    # ./users.nix
-
-    # Import your generated (nixos-generate-config) hardware configuration
-    # ./hardware-configuration.nix
     ./disk.nix
     ./secret_paths.nix
     ./services.nix
@@ -45,14 +36,10 @@
   boot.loader.grub.enable = true;
   zramSwap.enable = true;
 
-  # FIXME: Add the rest of your current configuration
-
   networking.hostName = "stargaze";
   time.timeZone = "Europe/Madrid";
 
-  # TODO: Configure your system-wide user settings (groups, etc), add more users as needed.
   users.users = {
-    # FIXME: Replace with your username
     moon = {
       # TODO: You can set an initial password for your user.
       # If you do, you can skip setting a root password by passing '--no-root-passwd' to nixos-install.
@@ -70,9 +57,10 @@
   security.sudo.wheelNeedsPassword = false; # right, i am using a ssh keys. thanks warning of interactive sudo in deployrs
 
   home-manager = {
-    users.moon = import ./home.nix;
+    users.moon = ./home.nix;
     useGlobalPkgs = true;
     useUserPackages = true;
+    backupFileExtension = "backup";
   };
 
   programs.neovim = {
@@ -93,8 +81,6 @@
     unzip
   ];
 
-  # This setups a SSH server. Very important if you're setting up a headless system.
-  # Feel free to remove if you don't need it.
   services.openssh = {
     enable = true;
     settings = {
