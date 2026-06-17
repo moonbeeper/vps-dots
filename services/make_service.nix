@@ -118,6 +118,9 @@ in
         PrivateDevices = true;
 
         EnvironmentFile = lib.mkIf (thisService.secretEnv != null) thisService.secretEnv;
+        Environment = [
+          "SVC_PORT=${toString thisService.port}"
+        ];
         Restart = "on-failure";
         RestartSec = "5s";
         TimeoutStartSec = "30s";
