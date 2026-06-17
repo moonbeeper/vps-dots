@@ -79,6 +79,7 @@
     htop
     btop
     unzip
+    eza
   ];
 
   services.openssh = {

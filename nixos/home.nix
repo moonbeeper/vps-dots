@@ -4,7 +4,6 @@
   home.homeDirectory = "/home/moon";
 
   home.packages = with pkgs; [
-    eza
     croc
     fastfetch
   ];
