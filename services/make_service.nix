@@ -3,10 +3,6 @@
   description ? "${name} service",
   flake ? null,
   defaultPort ? 8080,
-  postgres ? {
-    enable = false;
-    databases = [ ];
-  },
 }:
 {
   lib,
@@ -17,6 +13,7 @@
 let
   thisService = config.moonix.services.${name};
   legalDbUsername = lib.replaceStrings [ "-" ] [ "_" ] name;
+  dashServiceName = lib.replaceStrings [ "_" ] [ "-" ] name;
 in
 {
   options.moonix.services.${name} = {
@@ -40,7 +37,10 @@ in
     # copies openssh flake settings part
     postgres = lib.mkOption {
       description = "postgresql configuration for '${name}' svc";
-      default = postgres;
+      default = {
+        enable = false;
+        databases = [];
+      };
       type = lib.types.submodule (
         { name, ... }: {
           options = {
@@ -55,7 +55,7 @@ in
                 "db1"
                 "db2"
               ];
-              default = postgres.databases;
+              default = [];
             };
           };
         }
@@ -65,6 +65,11 @@ in
       type = lib.types.nullOr lib.types.package;
       default = flake;
       description = "the nix package to run";
+    };
+    tailscale = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "whether to expose the service through tailscale";
     };
   };
 
@@ -76,8 +81,15 @@ in
       }
     ];
 
-    services.postgresql = {
-      enable = true;
+    services.tailscale.serve.enable = lib.mkIf thisService.tailscale true;
+    services.tailscale.serve.services."${dashServiceName}" = lib.mkIf thisService.tailscale {
+      endpoints = {
+        "tcp:${toString thisService.port}" = "http://localhost:${toString thisService.port}";
+      };
+    };
+
+
+    services.postgresql = lib.mkIf thisService.postgres.enable {
       ensureDatabases = [ "${legalDbUsername}_svc" ];
       ensureUsers = [
         {

@@ -10,4 +10,5 @@ let
 in
 {
   "caddy_cloudflare.age".publicKeys = users;
+  "tailscale_authkey.age".publicKeys = users;
 }

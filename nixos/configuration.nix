@@ -70,7 +70,7 @@
 
   programs.fish.enable = true;
   programs.starship.enable = true;
-  services.tailscale.enable = true;
+  services.bpftune.enable = true;
 
   environment.systemPackages = with pkgs; [
     wget
