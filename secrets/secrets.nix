@@ -11,4 +11,5 @@ in
 {
   "caddy_cloudflare.age".publicKeys = users;
   "tailscale_authkey.age".publicKeys = users;
+  "meow_auth.age".publicKeys = users;
 }

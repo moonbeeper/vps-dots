@@ -7,6 +7,7 @@
 {
   lib,
   config,
+  pkgs,
   ...
 }:
 
@@ -14,6 +15,15 @@ let
   thisService = config.moonix.services.${name};
   legalDbUsername = lib.replaceStrings [ "-" ] [ "_" ] name;
   dashServiceName = lib.replaceStrings [ "_" ] [ "-" ] name;
+  service_name = "${name}-svc";
+  service_user = "${legalDbUsername}_svc";
+  secretsDir = "/run/${service_name}";
+  secretFileEntries = lib.imap0(i: filename: {
+    inherit filename;
+    secretName = "moonix-${name}-file-${toString i}";
+    credential_id = "file-${toString i}";
+    target = "${secretsDir}/${filename}";
+  }) (lib.attrNames thisService.secretFiles);
 in
 {
   options.moonix.services.${name} = {
@@ -34,7 +44,12 @@ in
       default = null;
       description = "the path to the agenix secret file that will be loaded to the env of the service";
     };
-    # copies openssh flake settings part
+    secretFiles = lib.mkOption {
+      type = lib.types.attrsOf lib.types.path;
+      default = {};
+      description = "arbitraray files to be loaded to the service, they will be available at /run/${service_name}/secrets/<filename>";
+    };
+    # copies openssh flake settings partservice_user
     postgres = lib.mkOption {
       description = "postgresql configuration for '${name}' svc";
       default = {
@@ -71,15 +86,53 @@ in
       default = false;
       description = "whether to expose the service through tailscale";
     };
+    useUser = lib.mkOption {
+      description = "whether to create a user for the service";
+      default = {
+        yes = false;
+        data_path = "/var/lib/${name}-svc";
+      };
+      type = lib.types.submodule (
+        { name, ... }: {
+          options = {
+            yes = lib.mkEnableOption "whether to create a user (and group) for the service";
+            data_path = lib.mkOption {
+              type = lib.types.path;
+              description = "the home directory of the service user";
+              default = "/var/lib/${name}-svc";
+            };
+          };
+        }
+      );
+    };
   };
 
   config = lib.mkIf thisService.enable {
     assertions = [
       {
-        assertion = flake != null;
+        assertion = thisService.package != null;
         message = "you must provide a flake for the service '${name}' to run";
       }
     ];
+
+    age.secrets = lib.listToAttrs (
+      map (entry: lib.nameValuePair entry.secretName {
+        file = thisService.secretFiles.${entry.filename};
+      }) secretFileEntries
+    );
+
+    users.groups = lib.mkIf thisService.useUser.yes {
+      services = {};
+      "${service_user}" = {};
+    };
+
+    users.users.${service_user} = lib.mkIf thisService.useUser.yes {
+      isSystemUser = true;
+      shell = pkgs.fish;
+      home = thisService.useUser.data_path;
+      extraGroups = ["services"];
+      group = service_user;
+    };
 
     services.tailscale.serve.enable = lib.mkIf thisService.tailscale true;
     services.tailscale.serve.services."${dashServiceName}" = lib.mkIf thisService.tailscale {
@@ -88,12 +141,11 @@ in
       };
     };
 
-
     services.postgresql = lib.mkIf thisService.postgres.enable {
-      ensureDatabases = [ "${legalDbUsername}_svc" ];
+      ensureDatabases = [ service_user ];
       ensureUsers = [
         {
-          name = "${legalDbUsername}_svc";
+          name = service_user;
           ensureDBOwnership = true;
         }
       ];
@@ -101,7 +153,7 @@ in
 
     # https://wiki.nixos.org/wiki/Systemd/User_Services
     # https://search.nixos.org/options?query=systemd.user.services
-    systemd.services."${name}-svc" = lib.mkIf thisService.enable {
+    systemd.services.${service_name} = lib.mkIf thisService.enable {
       wantedBy = [
         "multi-user.target"
       ]
@@ -116,10 +168,6 @@ in
       serviceConfig = {
         ExecStart = "${lib.getExe thisService.package}";
 
-        DynamicUser = true;
-        StateDirectory = "${name}-svc";
-        RuntimeDirectory = "${name}-svc";
-
         # https://gist.github.com/ageis/f5595e59b1cddb1513d1b425a323db04
         PrivateTmp = true;
         ProtectHome = true;
@@ -132,10 +180,30 @@ in
         EnvironmentFile = lib.mkIf (thisService.secretEnv != null) thisService.secretEnv;
         Environment = [
           "SVC_PORT=${toString thisService.port}"
+        ] ++ lib.optionals (secretFileEntries != []) [
+          "SVC_SECRETS_DIR=${secretsDir}"
         ];
         Restart = "on-failure";
         RestartSec = "5s";
         TimeoutStartSec = "30s";
+      } // lib.optionalAttrs (thisService.useUser.yes) {
+        User = service_user;
+        Group = service_user;
+      } // lib.optionalAttrs (!thisService.useUser.yes) {
+        DynamicUser = true;
+        Group = service_user;
+        StateDirectory = service_name;
+        RuntimeDirectory = service_name;
+      } // lib.optionalAttrs(secretFileEntries != []) {
+        RuntimeDirectory = service_name;
+        RuntimeDirectoryMode = "0700";
+        WorkingDirectory = secretsDir;
+        LoadCredential = map (
+          entry: "${entry.credential_id}:${config.age.secrets.${entry.secretName}.path}"
+        ) secretFileEntries;
+        ExecStartPre = map (
+          entry: "${pkgs.coreutils}/bin/install -D -m 0400 \${CREDENTIALS_DIRECTORY}/${entry.credential_id} ${lib.escapeShellArg entry.target}"
+        ) secretFileEntries;
       };
     };
 
@@ -148,9 +216,9 @@ in
         "network.target"
         "postgresql.service"
       ];
-      before = [ "${name}-svc.service" ];
+      before = [ "${service_name}.service" ];
 
-      description = "postgresql db setup for ${name}-svc";
+      description = "postgresql db setup for ${service_name}";
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true; # appear as active when it already runs for like 1s lol
@@ -162,7 +230,7 @@ in
           psql = "${config.services.postgresql.package}/bin/psql";
         in
         ''
-          ${psql} postgres -tc "select 1 from pg_roles where rolname = '${legalDbUsername}_svc'" | grep -q 1 || ${psql} postgres -c "create role ${legalDbUsername}_svc with login"
+          ${psql} postgres -tc "select 1 from pg_roles where rolname = '${service_user}'" | grep -q 1 || ${psql} postgres -c "create role ${service_user} with login"
 
           ${lib.concatMapStringsSep "\n" (
             db:
@@ -171,9 +239,9 @@ in
               fullDb = "${legalDbUsername}_${legalDbName}";
             in
             ''
-              ${psql} postgres -tc "select 1 from pg_database where datname = '${fullDb}'" | grep -q 1 || ${psql} postgres -c "create database ${fullDb} owner ${legalDbUsername}_svc"
+              ${psql} postgres -tc "select 1 from pg_database where datname = '${fullDb}'" | grep -q 1 || ${psql} postgres -c "create database ${fullDb} owner ${service_user}"
               ${psql} ${fullDb} -c "revoke all on database ${fullDb} from public"
-              ${psql} ${fullDb} -c "grant all on database ${fullDb} to ${legalDbUsername}_svc"
+              ${psql} ${fullDb} -c "grant all on database ${fullDb} to ${service_user}"
             ''
           ) thisService.postgres.databases}
         '';

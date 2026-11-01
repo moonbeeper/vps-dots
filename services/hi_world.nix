@@ -15,5 +15,6 @@ in
       databases = ["meow"];
     };
     tailscale = true;
+    useUser.yes = true;
   };
 }

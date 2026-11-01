@@ -18,6 +18,9 @@
 
     nixos-anywhere.url = "github:nix-community/nixos-anywhere/";
     nixos-anywhere.inputs.nixpkgs.follows = "nixpkgs";
+
+    meow_auth.url = "github:moonbeeper/meow_auth";
+    meow_auth.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs =

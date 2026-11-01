@@ -93,6 +93,9 @@
     };
   };
 
+  networking.firewall.allowedTCPPorts = [ 80 443 465 ];
+  networking.firewall.allowedUDPPorts = [ 80 443 465 ];
+
   # https://nixos.wiki/wiki/FAQ/When_do_I_update_stateVersion
   system.stateVersion = "26.05";
 }
